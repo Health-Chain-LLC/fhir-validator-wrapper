@@ -21,7 +21,7 @@ public class ValidatorTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    validator = new Validator("./igs");
+    validator = new Validator();
   }
 
   @AfterEach
@@ -87,12 +87,13 @@ public class ValidatorTest {
       fail();
     }
   }
-  
+
   @Test
   void validateMultipleProfiles() {
     try {
       byte[] example = loadFile("us_core_patient_example.json");
-      validator.validate(example, Arrays.asList("http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient", "http://hl7.org/fhir/StructureDefinition/Patient"));
+      validator.validate(example, Arrays.asList("http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient",
+          "http://hl7.org/fhir/StructureDefinition/Patient"));
     } catch (Exception e) {
       e.printStackTrace();
       fail();
@@ -113,11 +114,11 @@ public class ValidatorTest {
         "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-patient",
         "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-related-medication-request",
         "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-related-surgical-procedure",
-        "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-stage-group"
-    );
+        "http://hl7.org/fhir/us/mcode/StructureDefinition/mcode-cancer-stage-group");
     assertTrue(profilesToLoad.stream().noneMatch(this::isProfileLoaded));
 
-    // Because the version isn't given, this should load the "current" version of hl7.fhir.us.mcode
+    // Because the version isn't given, this should load the "current" version of
+    // hl7.fhir.us.mcode
     IgResponse ig = validator.loadIg("hl7.fhir.us.mcode", null);
     assertEquals("hl7.fhir.us.mcode", ig.id);
     assertTrue(ig.profiles.containsAll(profilesToLoad));
@@ -140,8 +141,7 @@ public class ValidatorTest {
         "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-patient",
         "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-practitioner",
         "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-practitionerrole",
-        "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-procedure"
-    );
+        "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-procedure");
     assertTrue(oldProfilesToLoad.stream().noneMatch(this::isProfileLoaded));
 
     IgResponse ig = validator.loadIg("hl7.fhir.us.qicore", "3.3.0");
@@ -149,11 +149,13 @@ public class ValidatorTest {
     assertEquals("3.3.0", ig.version);
     assertEquals(45, ig.profiles.size());
 
-    // All old profiles to load have been loaded and are returned in the resulting list
+    // All old profiles to load have been loaded and are returned in the resulting
+    // list
     assertTrue(ig.profiles.containsAll(oldProfilesToLoad));
     assertTrue(oldProfilesToLoad.stream().allMatch(this::isProfileLoaded));
 
-    // All of the profiles that are in hl7.fhir.us.qicore#4.9.0, but not hl7.fhir.us.qicore#3.3.0
+    // All of the profiles that are in hl7.fhir.us.qicore#4.9.0, but not
+    // hl7.fhir.us.qicore#3.3.0
     List<String> newProfilesToLoad = Arrays.asList(
         "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-communicationnotdone",
         "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-devicenotrequested",
@@ -169,17 +171,18 @@ public class ValidatorTest {
         "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-observationnotdone",
         "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-procedurenotdone",
         "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-recorded",
-        "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-servicenotrequested"
-    );
+        "http://hl7.org/fhir/us/qicore/StructureDefinition/qicore-servicenotrequested");
     assertTrue(newProfilesToLoad.stream().noneMatch(this::isProfileLoaded));
 
-    // There are 15 added profiles and 2 removed profiles going from version 3.3.0 to 4.9.0
+    // There are 15 added profiles and 2 removed profiles going from version 3.3.0
+    // to 4.9.0
     ig = validator.loadIg("hl7.fhir.us.qicore", "4.9.0");
     assertEquals("hl7.fhir.us.qicore", ig.id);
     assertEquals("4.9.0", ig.version);
     assertEquals(58, ig.profiles.size());
 
-    // All new profiles to load have been loaded and are returned in the resulting list
+    // All new profiles to load have been loaded and are returned in the resulting
+    // list
     assertTrue(ig.profiles.containsAll(newProfilesToLoad));
     assertTrue(newProfilesToLoad.stream().allMatch(this::isProfileLoaded));
   }
@@ -197,8 +200,7 @@ public class ValidatorTest {
         "http://hl7.org.au/fhir/StructureDefinition/au-receivingapplication",
         "http://hl7.org.au/fhir/StructureDefinition/au-receivingfacility",
         "http://hl7.org.au/fhir/StructureDefinition/encryption-certificate-pem-x509",
-        "http://hl7.org.au/fhir/StructureDefinition/no-fixed-address"
-    );
+        "http://hl7.org.au/fhir/StructureDefinition/no-fixed-address");
     assertTrue(profilesToLoad.stream().noneMatch(this::isProfileLoaded));
     IgResponse ig = validator.loadPackage(loadFile("hl7.fhir.au.base.tgz"));
     assertEquals("hl7.fhir.au.base", ig.id);

@@ -10,10 +10,14 @@ public class App {
 
   /**
    * Starting point for the Validation Service.
-   * <p>Passing the 'prepare' argument causes the FHIR artifacts needed to be downloaded.</p>
+   * <p>
+   * Passing the 'prepare' argument causes the FHIR artifacts needed to be
+   * downloaded.
+   * </p>
+   * 
    * @param args the application initialization arguments
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
     Logger logger = LoggerFactory.getLogger(App.class);
     if (args.length > 0) {
       if (args[0].equals("prepare")) {
@@ -34,7 +38,7 @@ public class App {
   private static Validator initializeValidator() {
     Logger logger = LoggerFactory.getLogger(App.class);
     try {
-      return new Validator("./igs");
+      return new Validator();
     } catch (Exception e) {
       logger.error("There was an error initializing the validator:", e);
       System.exit(1);
@@ -56,15 +60,21 @@ public class App {
   /**
    * Starts the app.
    */
-  private static void startApp() {
+  private static void startApp() throws Exception {
     Logger logger = LoggerFactory.getLogger(App.class);
     logger.info("Starting Server...");
     SparkUtils.createServerWithRequestLog(logger);
+    // Endpoints.getDummyInstance(initializePathEvaluator(), getPortNumber());
+    // Endpoints.getInstance(
+    // null,
+    // initializePathEvaluator(),
+    // getPortNumber());
+    Validator validator = initializeValidator();
     Endpoints.getInstance(
-        initializeValidator(),
+        validator,
         initializePathEvaluator(),
-        getPortNumber()
-    );
+        getPortNumber());
+    validator.loadValidator("./igs");
   }
 
   private static int getPortNumber() {

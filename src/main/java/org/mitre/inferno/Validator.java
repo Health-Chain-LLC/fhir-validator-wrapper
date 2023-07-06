@@ -38,6 +38,7 @@ public class Validator {
   private final ValidationEngine hl7Validator;
   private final FilesystemPackageCacheManager packageManager;
   private final Map<String, NpmPackage> loadedPackages;
+  private boolean loaded;
 
   /**
    * Creates the HL7 Validator to which can then be used for validation.
@@ -45,7 +46,7 @@ public class Validator {
    * @param igDir A directory containing tarred/gzipped IG packages
    * @throws Exception If the validator cannot be created
    */
-  public Validator(String igDir) throws Exception {
+  public Validator() throws Exception {
     final String fhirSpecVersion = "4.0";
     final String definitions = VersionUtilities.packageForVersion(fhirSpecVersion)
         + "#" + VersionUtilities.getCurrentVersion(fhirSpecVersion);
@@ -53,36 +54,18 @@ public class Validator {
     final String txLog = null;
     final String fhirVersion = "4.0.1";
 
-    ValidationEngineBuilder engineBuilder =
-        new ValidationEngineBuilder().withTxServer(
-                                                   txServer,
-                                                   txLog,
-                                                   FhirPublication.fromCode(fhirVersion)
-                                                   );
+    ValidationEngineBuilder engineBuilder = new ValidationEngineBuilder().withTxServer(
+        txServer,
+        txLog,
+        FhirPublication.fromCode(fhirVersion));
     hl7Validator = engineBuilder.fromSource(definitions);
-    
-    // The two lines below turn off URL resolution checking in the validator. 
-    // This eliminates the need to silence these errors elsewhere in Inferno
-    // And also keeps contained resources from failing validation based solely on URL errors
-    ValidationControl vc = new BaseValidator(null, null)
-                             .new ValidationControl(false, IssueSeverity.INFORMATION);
-    hl7Validator.getValidationControl().put("Type_Specific_Checks_DT_URL_Resolve", vc);
 
-    // Get all the package gzips in the "igs/package" directory
-    File dir = new File(igDir);
-    File[] igFiles = dir.listFiles((d, name) -> name.endsWith(".tgz"));
-    if (igFiles != null) {
-      for (File igFile : igFiles) {
-        hl7Validator
-            .getIgLoader()
-            .loadIg(
-                    hl7Validator.getIgs(),
-                    hl7Validator.getBinaries(),
-                    igFile.getAbsolutePath(),
-                    true
-                    );
-      }
-    }
+    // The two lines below turn off URL resolution checking in the validator.
+    // This eliminates the need to silence these errors elsewhere in Inferno
+    // And also keeps contained resources from failing validation based solely on
+    // URL errors
+    ValidationControl vc = new BaseValidator(null, null).new ValidationControl(false, IssueSeverity.INFORMATION);
+    hl7Validator.getValidationControl().put("Type_Specific_Checks_DT_URL_Resolve", vc);
 
     hl7Validator.connectToTSServer(txServer, txLog, FhirPublication.fromCode(fhirVersion));
     hl7Validator.setDoNative(false);
@@ -91,6 +74,29 @@ public class Validator {
 
     packageManager = new FilesystemPackageCacheManager(true);
     loadedPackages = new HashMap<>();
+    this.loaded = false;
+  }
+
+  public void loadValidator(String igDir) throws IOException {
+    // Get all the package gzips in the "igs/package" directory
+    File dir = new File(igDir);
+    File[] igFiles = dir.listFiles((d, name) -> name.endsWith(".tgz"));
+    if (igFiles != null) {
+      for (File igFile : igFiles) {
+        this.hl7Validator
+            .getIgLoader()
+            .loadIg(
+                hl7Validator.getIgs(),
+                hl7Validator.getBinaries(),
+                igFile.getAbsolutePath(),
+                true);
+      }
+    }
+    this.loaded = true;
+  }
+
+  public boolean isLoaded() {
+    return this.loaded;
   }
 
   /**
@@ -112,10 +118,9 @@ public class Validator {
    * @return a sorted list of distinct structure canonicals
    */
   public List<String> getStructures() {
-    List<StructureDefinition> structures =
-        hl7Validator
-            .getContext()
-            .fetchResourcesByType(StructureDefinition.class);
+    List<StructureDefinition> structures = hl7Validator
+        .getContext()
+        .fetchResourcesByType(StructureDefinition.class);
     return structures
         .stream()
         .map(StructureDefinition::getUrl)
@@ -129,7 +134,8 @@ public class Validator {
    *
    * @param resource a byte array representation of a FHIR resource
    * @param profiles a list of profile URLs to validate against
-   * @return an OperationOutcome resource representing the result of the validation operation
+   * @return an OperationOutcome resource representing the result of the
+   *         validation operation
    */
   public OperationOutcome validate(byte[] resource, List<String> profiles) {
     Manager.FhirFormat fmt = FormatUtilities.determineFormat(resource);
@@ -141,23 +147,19 @@ public class Validator {
       // Add our own OperationOutcome for errors that break the ValidationEngine
       OperationOutcome.IssueSeverity sev = OperationOutcome.IssueSeverity.FATAL;
       OperationOutcomeIssueComponent issue = new OperationOutcomeIssueComponent(
-                                                                                sev,
-                                                                                IssueType.STRUCTURE
-                                                                                );
+          sev,
+          IssueType.STRUCTURE);
       issue.setDiagnostics(e.getMessage());
       issue.setDetails(new CodeableConcept().setText(e.getMessage()));
       issue.addExtension(
-                         "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
-                         new IntegerType(1)
-                         );
+          "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-line",
+          new IntegerType(1));
       issue.addExtension(
-                         "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
-                         new IntegerType(1)
-                         );
+          "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-col",
+          new IntegerType(1));
       issue.addExtension(
-                         "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
-                         new CodeType("ValidationService")
-                         );
+          "http://hl7.org/fhir/StructureDefinition/operationoutcome-issue-source",
+          new CodeType("ValidationService"));
       oo = new OperationOutcome(issue);
     }
     return oo;
@@ -166,7 +168,8 @@ public class Validator {
   /**
    * Provides a map of known IGs that can be retrieved and loaded.
    *
-   * @return a map containing each known IG ID and its corresponding canonical URL.
+   * @return a map containing each known IG ID and its corresponding canonical
+   *         URL.
    */
   public Map<String, String> getKnownIGs() throws IOException {
     Map<String, String> igs = new HashMap<>();
@@ -195,9 +198,11 @@ public class Validator {
   /**
    * Finds any custom package that fits the given id and (possibly null) version.
    *
-   * @param id the ID of the custom package
-   * @param version the version of the custom package, or null to return the first match
-   * @return a matching custom IG package, or null if no matching package was found
+   * @param id      the ID of the custom package
+   * @param version the version of the custom package, or null to return the first
+   *                match
+   * @return a matching custom IG package, or null if no matching package was
+   *         found
    */
   private NpmPackage findCustomPackage(String id, String version) {
     String idRegex = "^" + id + "#" + (version != null ? version : ".*") + "$";
@@ -221,7 +226,7 @@ public class Validator {
   /**
    * Load an IG into the validator.
    *
-   * @param id the package ID of the FHIR IG to be loaded
+   * @param id      the package ID of the FHIR IG to be loaded
    * @param version the package version of the FHIR IG to be loaded
    * @return an IgResponse representing the package that was loaded
    */
@@ -232,11 +237,10 @@ public class Validator {
       hl7Validator
           .getIgLoader()
           .loadIg(
-                  hl7Validator.getIgs(),
-                  hl7Validator.getBinaries(),
-                  id + (version != null ? "#" + version : ""),
-                  true
-                  );
+              hl7Validator.getIgs(),
+              hl7Validator.getBinaries(),
+              id + (version != null ? "#" + version : ""),
+              true);
       npm = packageManager.loadPackage(id, version);
     }
     return IgResponse.fromPackage(npm);
@@ -256,11 +260,10 @@ public class Validator {
       hl7Validator
           .getIgLoader()
           .loadIg(
-                  hl7Validator.getIgs(),
-                  hl7Validator.getBinaries(),
-                  temp.getCanonicalPath(),
-                  true
-                  );
+              hl7Validator.getIgs(),
+              hl7Validator.getBinaries(),
+              temp.getCanonicalPath(),
+              true);
     } finally {
       temp.delete();
     }
@@ -287,8 +290,7 @@ public class Validator {
                 return new ArrayList<>();
               }
             },
-            (existing, replacement) -> existing
-        ));
+            (existing, replacement) -> existing));
   }
 
   public String getVersion() {
