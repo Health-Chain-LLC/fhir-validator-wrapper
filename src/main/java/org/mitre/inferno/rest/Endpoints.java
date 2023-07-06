@@ -23,13 +23,6 @@ public class Endpoints {
     createRoutes();
   }
 
-  private Endpoints(FHIRPathEvaluator evaluator, int port) {
-    this.validator = null;
-    this.pathEvaluator = null;
-    port(port);
-    createRoutes();
-  }
-
   /**
    * Get the existing Endpoints or create one if it does not already exist.
    *
@@ -68,28 +61,10 @@ public class Endpoints {
 
     if (validator != null) {
       ValidatorEndpoint.getInstance(validator);
-    } else {
-      ValidatorEndpoint.getInstance();
     }
 
     if (pathEvaluator != null) {
       FHIRPathEndpoint.getInstance(pathEvaluator);
     }
-  }
-
-  /**
-   * Get the existing Endpoints or create one if it does not already exist.
-   *
-   * @param evaluator the FHIRPathEvaluator that should be used at the /fhirpath
-   *                  endpoint.
-   *                  Passing null will skip setting up the /fhirpath endpoint.
-   * @param port      the port to listen for requests on
-   * @return the singleton Endpoints
-   */
-  public static Endpoints getDummyInstance(FHIRPathEvaluator evaluator, int port) {
-    if (endpoints == null) {
-      endpoints = new Endpoints(evaluator, port);
-    }
-    return endpoints;
   }
 }

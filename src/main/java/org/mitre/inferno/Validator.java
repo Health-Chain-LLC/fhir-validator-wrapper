@@ -33,12 +33,17 @@ import org.hl7.fhir.validation.ValidationEngine;
 import org.hl7.fhir.validation.ValidationEngine.ValidationEngineBuilder;
 import org.hl7.fhir.validation.cli.utils.VersionUtil;
 import org.mitre.inferno.rest.IgResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.google.gson.JsonObject;
 
 public class Validator {
   private final ValidationEngine hl7Validator;
   private final FilesystemPackageCacheManager packageManager;
   private final Map<String, NpmPackage> loadedPackages;
   private boolean loaded;
+  private JsonObject jsonWarning;
+  private List<String> listWarning;
 
   /**
    * Creates the HL7 Validator to which can then be used for validation.
@@ -47,6 +52,12 @@ public class Validator {
    * @throws Exception If the validator cannot be created
    */
   public Validator() throws Exception {
+    JsonObject jsonWarning = new JsonObject();
+    jsonWarning.addProperty("Warning", "Validator still loading... please wait.");
+    this.jsonWarning = jsonWarning;
+    List<String> listWarning = new ArrayList<String>();
+    listWarning.add("Validator loading, please wait...");
+    this.listWarning = listWarning;
     final String fhirSpecVersion = "4.0";
     final String definitions = VersionUtilities.packageForVersion(fhirSpecVersion)
         + "#" + VersionUtilities.getCurrentVersion(fhirSpecVersion);
@@ -78,6 +89,9 @@ public class Validator {
   }
 
   public void loadValidator(String igDir) throws IOException {
+    Logger logger = LoggerFactory.getLogger(Validator.class);
+    logger.info("hi");
+    logger.info(String.valueOf(this.loaded));
     // Get all the package gzips in the "igs/package" directory
     File dir = new File(igDir);
     File[] igFiles = dir.listFiles((d, name) -> name.endsWith(".tgz"));
@@ -93,6 +107,7 @@ public class Validator {
       }
     }
     this.loaded = true;
+    logger.info(String.valueOf(this.loaded));
   }
 
   public boolean isLoaded() {
@@ -105,11 +120,15 @@ public class Validator {
    * @return a sorted list of distinct resource names
    */
   public List<String> getResources() {
-    return hl7Validator.getContext().getResourceNames()
-        .stream()
-        .sorted()
-        .distinct()
-        .collect(Collectors.toList());
+    if (this.loaded) {
+      return hl7Validator.getContext().getResourceNames()
+          .stream()
+          .sorted()
+          .distinct()
+          .collect(Collectors.toList());
+    } else {
+      return this.listWarning;
+    }
   }
 
   /**

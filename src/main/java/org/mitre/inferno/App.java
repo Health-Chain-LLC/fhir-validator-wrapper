@@ -64,11 +64,6 @@ public class App {
     Logger logger = LoggerFactory.getLogger(App.class);
     logger.info("Starting Server...");
     SparkUtils.createServerWithRequestLog(logger);
-    // Endpoints.getDummyInstance(initializePathEvaluator(), getPortNumber());
-    // Endpoints.getInstance(
-    // null,
-    // initializePathEvaluator(),
-    // getPortNumber());
     Validator validator = initializeValidator();
     Endpoints.getInstance(
         validator,

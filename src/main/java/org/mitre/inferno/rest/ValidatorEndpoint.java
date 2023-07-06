@@ -61,87 +61,33 @@ public class ValidatorEndpoint {
    * validation service.
    */
   private void createRoutes() {
-    // if (this.validator != null) {
-    if (this.validator.isLoaded()) {
+    post("/validate",
+        (req, res) -> {
+          res.type("application/fhir+json");
+          return validateResource(req.bodyAsBytes(), req.queryParams("profile"));
+        });
 
-      post("/validate",
-          (req, res) -> {
-            res.type("application/fhir+json");
-            return validateResource(req.bodyAsBytes(), req.queryParams("profile"));
-          });
+    get("/resources", (req, res) -> validator.getResources(), TO_JSON);
 
-      get("/resources", (req, res) -> validator.getResources(), TO_JSON);
+    get("/profiles", (req, res) -> validator.getStructures(), TO_JSON);
 
-      get("/profiles", (req, res) -> validator.getStructures(), TO_JSON);
+    post("/profiles",
+        (req, res) -> {
+          validator.loadProfile(req.bodyAsBytes());
+          return "";
+        });
 
-      post("/profiles",
-          (req, res) -> {
-            validator.loadProfile(req.bodyAsBytes());
-            return "";
-          });
+    get("/profiles-by-ig", (req, res) -> validator.getProfilesByIg(), TO_JSON);
 
-      get("/profiles-by-ig", (req, res) -> validator.getProfilesByIg(), TO_JSON);
+    get("/igs", (req, res) -> validator.getKnownIGs(), TO_JSON);
 
-      get("/igs", (req, res) -> validator.getKnownIGs(), TO_JSON);
+    post("/igs", (req, res) -> validator.loadPackage(req.bodyAsBytes()), TO_JSON);
 
-      post("/igs", (req, res) -> validator.loadPackage(req.bodyAsBytes()), TO_JSON);
+    put("/igs/:id",
+        (req, res) -> validator.loadIg(req.params("id"), req.queryParams("version")),
+        TO_JSON);
 
-      put("/igs/:id",
-          (req, res) -> validator.loadIg(req.params("id"), req.queryParams("version")),
-          TO_JSON);
-
-      get("/version", (req, res) -> Version.getVersion());
-    } else {
-      JsonObject warning = new JsonObject();
-      warning.addProperty("Warning", "Validator still loading... please wait.");
-      post("/validate",
-          (req, res) -> {
-            res.type("application/fhir+json");
-            return warning;
-          });
-
-      get("/resources", (req, res) -> {
-        res.type("application/fhir+json");
-        return warning;
-      });
-
-      get("/profiles", (req, res) -> {
-        res.type("application/fhir+json");
-        return warning;
-      });
-
-      post("/profiles",
-          (req, res) -> {
-            res.type("application/fhir+json");
-            return warning;
-          });
-
-      get("/profiles-by-ig", (req, res) -> {
-        res.type("application/fhir+json");
-        return warning;
-      });
-      get("/igs", (req, res) -> {
-        res.type("application/fhir+json");
-        return warning;
-      });
-
-      post("/igs", (req, res) -> {
-        res.type("application/fhir+json");
-        return warning;
-      });
-
-      put("/igs/:id",
-          (req, res) -> {
-            res.type("application/fhir+json");
-            return warning;
-          });
-
-      get("/version", (req, res) -> {
-        res.type("application/fhir+json");
-        return warning;
-      });
-
-    }
+    get("/version", (req, res) -> Version.getVersion());
 
   }
 
