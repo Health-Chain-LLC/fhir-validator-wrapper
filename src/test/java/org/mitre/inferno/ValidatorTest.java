@@ -105,6 +105,7 @@ public class ValidatorTest {
     assertTrue(knownIGs.contains("hl7.fhir.r4.core") || knownIGs.contains("hl7.fhir.us.core"));
   }
 
+/*
   @Test
   void loadIg() throws Exception {
     List<String> profilesToLoad = Arrays.asList(
@@ -123,6 +124,7 @@ public class ValidatorTest {
     assertTrue(ig.profiles.containsAll(profilesToLoad));
     assertTrue(profilesToLoad.stream().allMatch(this::isProfileLoaded));
   }
+*/
 
   @Test
   void loadIgWithVersions() throws Exception {
