@@ -25,6 +25,7 @@ ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
 
 COPY --from=build /home/InfernoValidationService-* .
 COPY igs igs
+ENV DISABLE_TX=true
 RUN bin/InfernoValidationService prepare -tx n/a
 EXPOSE 4567
 
