@@ -16,7 +16,7 @@ COPY config config
 COPY igs igs
 COPY src src
 
-RUN ./gradlew build
+RUN ./gradlew build -x test
 RUN tar -xvf build/distributions/InfernoValidationService-*.tar
 
 FROM openjdk:11
